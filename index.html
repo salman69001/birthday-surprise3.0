@@ -207,8 +207,9 @@
 
     .s3-text-box {
       position: absolute;
-      bottom: 8vh;
-      left: 8vw;
+      bottom: 12vh;
+      left: 5vw;
+      max-width: 42vw;
       z-index: 20;
       pointer-events: none;
     }
@@ -216,21 +217,21 @@
     .s3-top-phrase {
       font-style: italic;
       color: #7a5252;
-      font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+      font-size: clamp(0.7rem, 2.5vw, 0.95rem);
     }
 
     .s3-main-title {
       font-family: 'Great Vibes', cursive;
-      font-size: clamp(2.8rem, 10vw, 4.2rem);
+      font-size: clamp(1.8rem, 6.5vw, 2.8rem);
       color: #a80038;
       line-height: 1.1;
-      margin: 5px 0;
+      margin: 3px 0;
     }
 
     .s3-sub-phrase {
-      font-size: clamp(0.8rem, 3vw, 0.95rem);
+      font-size: clamp(0.65rem, 2.2vw, 0.85rem);
       color: #8b5d5d;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
     @keyframes fadeIn {
@@ -483,7 +484,7 @@
       initTreeAnimation();
     });
 
-    // CANVASTREE ANIMATION (FIXED FULL HEARTS)
+    // CANVASTREE ANIMATION (FIXED FULL HEARTS & MOBILE SCALING)
     function initTreeAnimation() {
       const canvas = document.getElementById('treeCanvas');
       const ctx = canvas.getContext('2d');
@@ -493,7 +494,8 @@
 
       const startX = canvas.width / 2;
       const startY = canvas.height;
-      const trunkHeight = canvas.height * 0.42;
+      // Scaled trunk height to ensure tree stays completely inside mobile screen
+      const trunkHeight = canvas.height * 0.32;
 
       let currentTrunkHeight = 0;
       let branchProgress = 0;
@@ -502,22 +504,25 @@
       const heartPoints = [];
       const totalHearts = 350;
 
+      // Scale factor dynamically adjusted for mobile viewports
+      const scale = Math.min(canvas.width * 0.022, canvas.height * 0.013);
+
       for (let i = 0; i < totalHearts; i++) {
         const t = Math.PI * 2 * Math.random();
         const r = Math.sqrt(Math.random());
         const x = 16 * Math.pow(Math.sin(t), 3);
         const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
         
-        const scale = canvas.height * 0.018;
         heartPoints.push({
           x: startX + (x * scale * r),
-          y: (canvas.height - trunkHeight - 120) + (y * scale * r),
+          y: (canvas.height - trunkHeight - (scale * 12)) + (y * scale * r),
           color: ['#e6005c', '#ff4d88', '#ff80ab', '#d4af37', '#b30047'][Math.floor(Math.random() * 5)],
-          size: 6 + Math.random() * 8,
+          size: 5 + Math.random() * 7,
           scale: 0
         });
       }
 
+      // Symmetrical full-heart renderer centered at (0,0)
       function drawFullHeart(ctx, x, y, size, color, scale) {
         ctx.save();
         ctx.translate(x, y);
@@ -525,12 +530,9 @@
         ctx.fillStyle = color;
         ctx.beginPath();
         
-        const topCurveHeight = size * 0.3;
-        ctx.moveTo(0, topCurveHeight);
-        ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
-        ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, size, 0, size);
-        ctx.bezierCurveTo(0, size, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
-        ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+        ctx.moveTo(0, size * 0.35);
+        ctx.bezierCurveTo(-size * 0.5, 0, -size * 0.5, -size * 0.5, 0, -size * 0.2);
+        ctx.bezierCurveTo(size * 0.5, -size * 0.5, size * 0.5, 0, 0, size * 0.35);
         
         ctx.closePath();
         ctx.fill();
@@ -549,9 +551,9 @@
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        if (length > 25) {
-          drawBranchStructure(0, -length, length * 0.75, Math.PI / 6, strokeWidth * 0.7);
-          drawBranchStructure(0, -length, length * 0.75, -Math.PI / 6, strokeWidth * 0.7);
+        if (length > 18) {
+          drawBranchStructure(0, -length, length * 0.72, Math.PI / 6, strokeWidth * 0.7);
+          drawBranchStructure(0, -length, length * 0.72, -Math.PI / 6, strokeWidth * 0.7);
         }
         ctx.restore();
       }
@@ -568,19 +570,20 @@
         ctx.moveTo(startX, startY);
         ctx.lineTo(startX, startY - currentTrunkHeight);
         ctx.strokeStyle = '#3d2314';
-        ctx.lineWidth = 8;
+        ctx.lineWidth = Math.min(7, canvas.width * 0.015);
         ctx.stroke();
 
-        // Branch Growth
+        // Branch Growth scaled to fit canvas width
         if (currentTrunkHeight >= trunkHeight) {
           if (branchProgress < 1) branchProgress += 0.02;
 
           const topY = startY - trunkHeight;
+          const maxBranchLen = Math.min(70, canvas.width * 0.18);
           const leftAngle = -Math.PI / 4 * branchProgress;
           const rightAngle = Math.PI / 4 * branchProgress;
 
-          drawBranchStructure(startX, topY, 80 * branchProgress, leftAngle, 5);
-          drawBranchStructure(startX, topY, 80 * branchProgress, rightAngle, 5);
+          drawBranchStructure(startX, topY, maxBranchLen * branchProgress, leftAngle, 4.5);
+          drawBranchStructure(startX, topY, maxBranchLen * branchProgress, rightAngle, 4.5);
         }
 
         // Heart Blooming
