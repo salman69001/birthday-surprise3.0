@@ -80,10 +80,10 @@
     }
 
     .main-heart-target {
-      width: clamp(70px, 22vw, 100px);
-      height: clamp(70px, 22vw, 100px);
+      width: clamp(80px, 25vw, 110px);
+      height: clamp(80px, 25vw, 110px);
       position: relative;
-      filter: drop-shadow(0 10px 18px rgba(180, 40, 60, 0.35));
+      filter: drop-shadow(0 12px 20px rgba(180, 40, 60, 0.4));
     }
 
     .instruction-bottom {
@@ -248,7 +248,13 @@
     <div class="target-container" id="targetBox">
       <div class="target-aura"></div>
       <svg class="main-heart-target" id="heartTarget" viewBox="0 0 100 100">
-        <path d="M 50,30 C 60,10 90,15 90,40 C 90,65 50,90 50,90 C 50,90 10,65 10,40 C 10,15 40,10 50,30 Z" fill="#e6005c"/>
+        <defs>
+          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff3385" />
+            <stop offset="100%" stop-color="#b30047" />
+          </linearGradient>
+        </defs>
+        <path d="M 50,30 C 60,10 90,15 90,40 C 90,65 50,90 50,90 C 50,90 10,65 10,40 C 10,15 40,10 50,30 Z" fill="url(#heartGrad)"/>
       </svg>
     </div>
 
@@ -281,7 +287,7 @@
   <div id="stage2" class="stage hidden">
     <div class="s2-content">
       <div class="s2-wish">make a wish...</div>
-      <div class="s2-title">Happy<br>Birthday</div>
+      <div class="s2-title">Happy<br>Birthday, my love</div>
       <div class="s2-divider"></div>
       <div class="s2-subtext">to someone worth celebrating</div>
       <button class="btn-next" id="btnNext">Wanna see something more?</button>
@@ -299,14 +305,12 @@
   </div>
 
   <script>
-    // WEB AUDIO SYNTHESIZER FOR SOUND EFFECTS
+    // AUDIO SYNTHESIZER
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
     function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new AudioCtx();
-      }
+      if (!audioCtx) audioCtx = new AudioCtx();
     }
 
     function playPullSound() {
@@ -433,14 +437,13 @@
       const hitThresholdY = -(archeryRect.top - targetRect.top);
 
       const flightInterval = setInterval(() => {
-        flightY -= 30;
+        flightY -= 32;
         arrowGroup.setAttribute('transform', `translate(0, ${flightY})`);
         bowString.setAttribute('d', `M 30 170 Q 100 165 170 170`);
 
-        // Check arrow contact with the target heart
         if (flightY <= hitThresholdY + 40) {
           clearInterval(flightInterval);
-          arrowGroup.style.display = 'none'; // Arrow disappears on hit
+          arrowGroup.style.display = 'none';
           playImpactSound();
           dropHeartDirectly();
         }
@@ -480,7 +483,7 @@
       initTreeAnimation();
     });
 
-    // CANVASTREE ANIMATION
+    // CANVASTREE ANIMATION (FIXED FULL HEARTS)
     function initTreeAnimation() {
       const canvas = document.getElementById('treeCanvas');
       const ctx = canvas.getContext('2d');
@@ -511,8 +514,27 @@
           y: (canvas.height - trunkHeight - 120) + (y * scale * r),
           color: ['#e6005c', '#ff4d88', '#ff80ab', '#d4af37', '#b30047'][Math.floor(Math.random() * 5)],
           size: 6 + Math.random() * 8,
-          alpha: 0
+          scale: 0
         });
+      }
+
+      function drawFullHeart(ctx, x, y, size, color, scale) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        
+        const topCurveHeight = size * 0.3;
+        ctx.moveTo(0, topCurveHeight);
+        ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
+        ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, size, 0, size);
+        ctx.bezierCurveTo(0, size, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
+        ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+        
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       }
 
       function drawBranchStructure(x, y, length, angle, strokeWidth) {
@@ -565,20 +587,11 @@
         if (branchProgress >= 0.8) {
           heartPoints.forEach((p, idx) => {
             if (idx / totalHearts <= bloomProgress) {
-              if (p.alpha === 0) playBloomPop();
-              if (p.alpha < 1) p.alpha += 0.05;
+              if (p.scale === 0) playBloomPop();
+              if (p.scale < 1) p.scale += 0.08;
             }
-            if (p.alpha > 0) {
-              ctx.save();
-              ctx.globalAlpha = p.alpha;
-              ctx.fillStyle = p.color;
-              ctx.beginPath();
-              ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/4, 0, Math.PI, true);
-              ctx.arc(p.x + p.size/4, p.y - p.size/4, p.size/4, 0, Math.PI, true);
-              ctx.lineTo(p.x, p.y + p.size/2);
-              ctx.closePath();
-              ctx.fill();
-              ctx.restore();
+            if (p.scale > 0) {
+              drawFullHeart(ctx, p.x, p.y, p.size, p.color, Math.min(1, p.scale));
             }
           });
 
